@@ -30,9 +30,9 @@ function geoFindMe() {
         status.textContent = "Geolocation is not supported by your browser";
     } else {
         status.textContent = "Locating…";
-        const watchID = navigator.geolocation.watchPosition(success, error, options);
+        const watchID = navigator.geolocation.watchPosition(success, error);
         // navigator.geolocation.getCurrentPosition(success, error);
     }
 }
 
-document.getElementById("find-me").addEventListener("click", geoFindMe);
+geoFindMe();
