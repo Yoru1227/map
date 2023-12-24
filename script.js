@@ -1,38 +1,36 @@
-function geoFindMe() {
-    const status = document.getElementById("status");
-    const mapLink = document.getElementById("map-link");
+let positionInfo = document.getElementById("positionInfo");
+var map = L.map('map').setView([0, 0], 13);
 
-    mapLink.href = "";
-    mapLink.textContent = "";
+// 初始化地圖
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-    function success(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+// 創建使用者位置標記
+var userMarker = L.marker([0, 0]).addTo(map);
 
-        status.textContent = "";
-        // mapLink.href = `https://www.google.com/maps/place/${latitude}/${longitude}`;
-        mapLink.href = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
-        mapLink.textContent = `Latitude: ${latitude} °, Longitude: ${longitude} °`;
-    }
+// 使用 watchPosition 持續追蹤使用者的位置
+var watchId = navigator.geolocation.watchPosition(function (position) {
+    var currentLat = position.coords.latitude;
+    var currentLng = position.coords.longitude;
 
-    function error() {
-        status.textContent = "Unable to retrieve your location";
-    }
+    // 更新地圖上的使用者位置標記
+    userMarker.setLatLng([currentLat, currentLng]).update();
+    map.setView([currentLat, currentLng], 13);
+    // 在這裡處理新的座標
+    console.log('新的座標:', currentLat, currentLng);
+    positionInfo.textContent = '目前位置:' + currentLat + ',' + currentLng;
 
-    const options = {
-        enableHighAccuracy: true,
-        maximumAge: 30000,
-        timeout: 27000,
-    };
+}, function (error) {
+    console.error('無法獲取位置:', error);
+});
 
-    // 偵測瀏覽器是否支援Geolocation API
-    if (!navigator.geolocation) {
-        status.textContent = "Geolocation is not supported by your browser";
-    } else {
-        status.textContent = "Locating…";
-        const watchID = navigator.geolocation.watchPosition(success, error);
-        // navigator.geolocation.getCurrentPosition(success, error);
-    }
-}
+// 監聽地圖移動事件
+// map.on('moveend', function () {
+//     var center = map.getCenter();
+//     console.log('新的座標:', center.lat, center.lng);
+//     // 在這裡處理新的座標
+// });
 
-geoFindMe();
+// 可選：停止監聽使用者位置變化
+// navigator.geolocation.clearWatch(watchId);
