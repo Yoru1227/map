@@ -4,15 +4,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <title>地圖</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 
 <body>
     <div id="map" style="height: 400px;"></div>
-    <p id="positionInfo"></p>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    <div id="currentLocation" style="height: 20px;"></div>
+    <br>
+    <!-- Console-like display area -->
+    <div id="console"
+        style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; height: 100px; overflow-y: scroll;"></div>
+
+    <script>
+        // Function to log messages to the console-like display area
+        function logToConsole(message) {
+            const consoleElement = document.getElementById('console');
+            consoleElement.innerHTML += `<p>${message}</p>`;
+            consoleElement.scrollTop = consoleElement.scrollHeight; // Scroll to the bottom
+        }
+
+        var map = L.map('map').setView([23.6978, 120.9605], 8);
+        var locationHistory = []; // 儲存位置歷史的陣列
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var currentLocationMarker;
+
+        let watchID;
+
+        if (navigator.geolocation) {
+            // 開始追蹤位置
+            watchID = navigator.geolocation.watchPosition(showPosition, showError);
+        } else {
+            alert("您的瀏覽器不支援地理位置功能。");
+        }
+
+        function showPosition(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // 將新的位置加入位置歷史陣列
+            locationHistory.push([lat, lon]);
+
+            if (locationHistory.length == 1) {
+                map.panTo([lat, lon], 1);
+                map.setView([lat, lon], 50);
+            }
+
+            // 保持位置歷史陣列的長度為5，如果超過則刪除最早的一個位置
+            if (locationHistory.length > 5) {
+                locationHistory.shift();
+            }
+
+            // 計算位置歷史陣列的平均值
+            const avgLat = locationHistory.reduce((sum, loc) => sum + loc[0], 0) / locationHistory.length;
+            const avgLon = locationHistory.reduce((sum, loc) => sum + loc[1], 0) / locationHistory.length;
+
+            // 在地圖上添加即時位置標記
+            if (!currentLocationMarker) {
+                currentLocationMarker = L.marker([avgLat, avgLon]).addTo(map)
+                    .bindPopup('Your current location');
+            } else {
+                currentLocationMarker.setLatLng([avgLat, avgLon]);
+            }
+
+            // 只更新地圖的中心點，保持縮放級別不變
+            map.panTo([avgLat, avgLon], 50);
+
+            // 更新即時位置元素的內容
+            document.getElementById('currentLocation').innerText = 'Current Location: ' + avgLat + ', ' + avgLon;
+
+            // 將訊息記錄到控制台-like顯示區
+            logToConsole(`New position: Latitude ${lat}, Longitude ${lon}`);
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("用戶拒絕了地理位置請求。");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("無法獲取用戶的位置信息。");
+                    break;
+                case error.TIMEOUT:
+                    alert("獲取位置信息超時。");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("發生未知錯誤。");
+                    break;
+            }
+
+            // 將錯誤訊息記錄到控制台-like顯示區
+            logToConsole(`Error: ${error.message}`);
+        }
+    </script>
 </body>
 
 </html>
